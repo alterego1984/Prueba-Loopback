@@ -1,6 +1,6 @@
-import {Entity, model, property, hasMany, belongsTo} from '@loopback/repository';
-import {Vehiculo} from './vehiculo.model';
+import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository';
 import {TipoDocumento} from './tipo-documento.model';
+import {Vehiculo} from './vehiculo.model';
 
 @model()
 export class Persona extends Entity {
@@ -46,6 +46,18 @@ export class Persona extends Entity {
     required: true,
   })
   correo: string;
+
+  @property({
+    type: 'string',
+    required: true,
+  })
+  telefono: string;
+
+  @property({
+    type: 'string',
+    required: false,
+  })
+  password: string;
 
   @hasMany(() => Vehiculo)
   vehiculos: Vehiculo[];

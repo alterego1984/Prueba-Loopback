@@ -1,30 +1,29 @@
+import {service} from '@loopback/core';
 import {
   Count,
   CountSchema,
   Filter,
   FilterExcludingWhere,
   repository,
-  Where,
+  Where
 } from '@loopback/repository';
 import {
-  post,
-  param,
-  get,
-  getModelSchemaRef,
-  patch,
-  put,
-  del,
-  requestBody,
-  response,
+  del, get,
+  getModelSchemaRef, param, patch, post, put, requestBody,
+  response
 } from '@loopback/rest';
 import {Persona} from '../models';
 import {PersonaRepository} from '../repositories';
+import {AutenticacionService} from '../services';
+const fetch = require("node-fetch");
 
 export class PersonaController {
   constructor(
     @repository(PersonaRepository)
-    public personaRepository : PersonaRepository,
-  ) {}
+    public personaRepository: PersonaRepository,
+    @service(AutenticacionService)
+    public servicioAutenticacion: AutenticacionService
+  ) { }
 
   @post('/personas')
   @response(200, {
@@ -44,7 +43,29 @@ export class PersonaController {
     })
     persona: Omit<Persona, 'id'>,
   ): Promise<Persona> {
-    return this.personaRepository.create(persona);
+    //creamos una contraseña aleatoria
+    let password = this.servicioAutenticacion.GenerarPassword();
+    //ciframos la contraseña
+    let passwordCifrado = this.servicioAutenticacion.CifrarPassword(password);
+    persona.password = passwordCifrado;
+    let person = await this.personaRepository.create(persona);
+    //envio de notificación al correo
+    let correo = persona.correo;
+    let asunto = `Bienvenido(a) ${persona.nombres}`;
+    let mensaje = `<p>Hola ${persona.nombres} ${persona.apellidos}, te damos la bienvenida a la plataforma <strong>Sobre Ruedas</strong>. Debes usar los siguientes datos para ingresar</p>
+                  <p>Usuario: ${persona.correo}</p>
+                  <p>Contraseña: ${password}</p>`;
+
+    // fetch("http://127.0.0.1:5000/email?email="+correo+"&subject="+asunto+"&message="+mensaje)
+    //   .then((data: any) => {
+    //     console.log(data);
+    //   });
+    fetch(`http://127.0.0.1:5000/email?email=${correo}&subject=${asunto}&message=${mensaje}`)
+      .then((data: any) => {
+        console.log(data);
+      });
+
+    return person;
   }
 
   @get('/personas/count')
