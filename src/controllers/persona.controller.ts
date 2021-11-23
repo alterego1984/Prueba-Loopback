@@ -9,10 +9,11 @@ import {
 } from '@loopback/repository';
 import {
   del, get,
-  getModelSchemaRef, param, patch, post, put, requestBody,
+  getModelSchemaRef, HttpErrors, param, patch, post, put, requestBody,
   response
 } from '@loopback/rest';
-import {Persona} from '../models';
+import {Keys} from '../config/keys';
+import {Credenciales, Persona} from '../models';
 import {PersonaRepository} from '../repositories';
 import {AutenticacionService} from '../services';
 const fetch = require("node-fetch");
@@ -24,6 +25,34 @@ export class PersonaController {
     @service(AutenticacionService)
     public servicioAutenticacion: AutenticacionService
   ) { }
+
+  @post("/autenticarPersona", {
+    responses: {
+      "200": {
+        description: "Autenticación de usuarios"
+      }
+    }
+  })
+  async autenticarPersona(
+    @requestBody() credenciales: Credenciales
+  ) {
+    let persona = await this.servicioAutenticacion.IdentificarPersona(credenciales.usuario, credenciales.contrasena);
+    if (persona) {
+      let token = this.servicioAutenticacion.GenerarJWT(persona);
+      return {
+        datos: {
+          nombre: persona.nombres + " " + persona.apellidos,
+          correo: persona.correo,
+          id: persona.id,
+          rol: "Cliente"
+        },
+        tk: token
+      }
+
+    } else {
+      throw new HttpErrors[401]("Los datos ingresados no son válidos");
+    }
+  }
 
   @post('/personas')
   @response(200, {
@@ -60,7 +89,7 @@ export class PersonaController {
     //   .then((data: any) => {
     //     console.log(data);
     //   });
-    fetch(`http://127.0.0.1:5000/email?email=${correo}&subject=${asunto}&message=${mensaje}`)
+    fetch(`${Keys.urlSrvNotificacion}/email?email=${correo}&subject=${asunto}&message=${mensaje}`)
       .then((data: any) => {
         console.log(data);
       });
