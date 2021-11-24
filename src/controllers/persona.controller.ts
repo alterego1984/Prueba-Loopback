@@ -1,3 +1,4 @@
+import {authenticate} from '@loopback/authentication';
 import {service} from '@loopback/core';
 import {
   Count,
@@ -54,6 +55,7 @@ export class PersonaController {
     }
   }
 
+  @authenticate("cliente")
   @post('/personas')
   @response(200, {
     description: 'Persona model instance',
